@@ -11,12 +11,19 @@ from time import time
 from pprint import pprint, pformat
 from glob import glob
 
-# import matplotlib
-# matplotlib.use('Agg')
-# import matplotlib.pyplot as plt
-
 import numpy as np
 import pandas as pd
+
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.model_selection import train_test_split
+
+parser = argparse.ArgumentParser(description='Main.')
+parser.add_argument('--ii', type=int, help='Index of the run.')                                                                                                 
+parser.add_argument('--ep', type=int, default=5, help='Number of epochs.')                                                                    
+parser.add_argument('--gout', type=str, help='Global output.')                                                                    
+# args, other_args = parser.parse_known_args()
+args = parser.parse_args()
+args = vars(args)
 
 try:
     import tensorflow as tf
@@ -38,12 +45,7 @@ try:
 except:
     print('Could not import tensorflow.')
 
-def extract_subset_fea(df, fea_list, fea_sep='_'):
-    """ Extract features based feature prefix name. """
-    fea = [c for c in df.columns if (c.split(fea_sep)[0]) in fea_list]
-    return df[fea]
-    
-def reg_go_arch(input_dim, dr_rate=0.1):
+def model_arch(input_dim, dr_rate=0.1):
     DR = dr_rate
     inputs = Input(shape=(input_dim,))
     x = Dense(250, activation='relu')(inputs)
@@ -58,8 +60,8 @@ def reg_go_arch(input_dim, dr_rate=0.1):
     model = Model(inputs=inputs, outputs=outputs)
     return model
 
-def reg_go_callback_def(outdir, ref_metric='val_loss'):
-    """ Required for lrn_crv.py """
+def model_callback_def(outdir, ref_metric='val_loss'):
+    """ ... """
     checkpointer = ModelCheckpoint( str(outdir/'model_best.h5'), monitor='val_loss', verbose=0,
                                     save_weights_only=False, save_best_only=True )
     csv_logger = CSVLogger( outdir/'training.log' )
@@ -68,42 +70,44 @@ def reg_go_callback_def(outdir, ref_metric='val_loss'):
     early_stop = EarlyStopping( monitor=ref_metric, patience=50, verbose=1, mode='auto' )
     return [checkpointer, csv_logger, early_stop, reduce_lr]
 
-
 # File path
 filepath = Path(__file__).resolve().parent
-# data = pd.read_parquet('ml.ADRP-ADPR_pocket1_round1_dock.dsc.parquet')
-# data = data.sample(n=100000, random_state=0).reset_index(drop=True)
+print('Loading data ...')
 data = pd.read_parquet('data.parquet')
-
-# Get features (x), target (y), and meta
-# fea_list = ['mod']
-# trg_name = 'reg'
-# xdata = extract_subset_fea(data, fea_list=fea_list, fea_sep='.')
-# meta = data.drop( columns=xdata.columns )
-# ydata = meta[ trg_name ]
-# del data
 xdata = data.iloc[:,1:]
 ydata = data.iloc[:,0]
 
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 scaler = StandardScaler()
 cols = xdata.columns
 xdata = pd.DataFrame( scaler.fit_transform(xdata), columns=cols, dtype=np.float32 )    
 
-outdir = os.makedirs('./out', exist_ok=True)
+run_id = args['ii']
+outdir = Path(args['gout'])/'out{}'.format(run_id)
+os.makedirs(outdir, exist_ok=True)
 input_dim = xdata.shape[1]
-model = reg_go_arch(input_dim, dr_rate=0.1)
 
+# Model
+model = model_arch(input_dim, dr_rate=0.1)
 opt = SGD(lr=0.0001, momentum=0.9)
 model.compile(loss='mean_squared_error', optimizer=opt, metrics=['mae'])
 model.summary()
 
-from sklearn.model_selection import train_test_split
+# Fit kwargs
 xtr, xte, ytr, yte = train_test_split(xdata, ydata, test_size=0.3)
 eval_set = (xte, yte)
-ml_fit_kwargs = {'epochs': 50, 'batch_size': 32, 'verbose': 1}
+callbacks = model_callback_def(outdir)
+ml_fit_kwargs = {'epochs': args['ep'], 'batch_size': 32, 'verbose': 1}
 ml_fit_kwargs['validation_data'] = eval_set
+ml_fit_kwargs['callbacks'] = callbacks
+
+# Train
 history = model.fit(xtr, ytr, **ml_fit_kwargs)
+
+# Predict
+yte_pred = model.predict(xte)
+
+# Dump preds
+pd.DataFrame(yte_pred).to_csv(outdir/'yte_preds.csv', index=False)
 
 print('Done.')
 
