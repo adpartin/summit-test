@@ -3,7 +3,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-filepath = Path(__file__).resolve().parent
 data = pd.read_parquet('ml.ADRP-ADPR_pocket1_round1_dock.dsc.parquet')
 data = data.sample(n=30000, random_state=0).reset_index(drop=True)
 data = data.drop(columns=['cls','binner','name','smiles'])

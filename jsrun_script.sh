@@ -9,7 +9,7 @@ out_prefix="/gpfs/alpine/med106/scratch/$USER"
 # out_prefix="/gpfs/alpine/med106/scratch/apartin"
 
 device=$1
-id=$2
+ii=$2
 epoch=$3
 gout="$out_prefix"
 echo "Using cuda device $device"
@@ -19,7 +19,7 @@ echo "Global output: $gout"
 
 export CUDA_VISIBLE_DEVICES=$device
 
-python main.py --ii $ii --ep $epoch --gout $gout exec > "$out_prefix"/run_"$id".log 2>&1
+python main.py --ii $ii --ep $epoch --gout $gout exec > "$out_prefix"/run_"$ii".log 2>&1
 # python main.py --id $id --ep $epoch --gout $gout
 
 
