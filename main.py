@@ -17,7 +17,7 @@ filepath = Path(__file__).resolve().parent
 # Input args
 parser = argparse.ArgumentParser(description='Main.')
 parser.add_argument('--ii', type=int, help='Index of the run.')                                                                                                 
-parser.add_argument('--ep', type=int, default=5, help='Number of epochs.')                                                                    
+parser.add_argument('--ep', type=int, default=3, help='Number of epochs.')                                                                    
 parser.add_argument('--gout', type=str, help='Global output.')                                                                    
 # args, other_args = parser.parse_known_args()
 args = parser.parse_args()
