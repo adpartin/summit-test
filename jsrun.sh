@@ -14,9 +14,6 @@ device=$1
 id=$2
 global_sufx=$3
 
-# dump_prefix="/gpfs/alpine/med106/scratch/$USER"
-# gout="$dump_prefix"
-
 gout="/gpfs/alpine/med106/scratch/$USER/$global_sufx"
 mkdir -p $gout
 
