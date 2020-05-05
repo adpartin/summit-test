@@ -3,6 +3,9 @@
 #BSUB -W 0:05
 #BSUB -nnodes 1
 #BSUB -J Script0
+# ----------------------------------------------
+# This script uses only 1 node.
+# ----------------------------------------------
 
 # You first need to load the appropriate module!
 # module load ibm-wml-ce/1.7.0-2

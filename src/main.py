@@ -13,15 +13,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.model_selection import train_test_split
 
 filepath = Path(__file__).resolve().parent
-
-# Input args
-parser = argparse.ArgumentParser(description='Main.')
-parser.add_argument('--ii', type=int, help='Index of the run.')                                                                                                 
-parser.add_argument('--ep', type=int, default=3, help='Number of epochs.')                                                                    
-parser.add_argument('--gout', type=str, help='Global output.')                                                                    
-# args, other_args = parser.parse_known_args()
-args = parser.parse_args()
-args = vars(args)
+DATAPATH=filepath/'../data/data.parquet'
 
 try:
     import tensorflow as tf
@@ -56,8 +48,19 @@ def model_callback_def(outdir, ref_metric='val_loss'):
     early_stop = EarlyStopping( monitor=ref_metric, patience=50, verbose=1, mode='auto' )
     return [checkpointer, csv_logger, early_stop, reduce_lr]
 
+# Input args
+parser = argparse.ArgumentParser(description='Main.')
+parser.add_argument('-dp', '--datapath', type=str, default=DATAPATH, help='Data path.')
+parser.add_argument('--gout', type=str, help='Global output.') 
+parser.add_argument('--ii', type=int, help='Index of the run.')
+parser.add_argument('--ep', type=int, default=2, help='Number of epochs.')
+# args, other_args = parser.parse_known_args()
+args = parser.parse_args()
+args = vars(args)
+
 # Load data
-data = pd.read_parquet('data.parquet')
+# data = pd.read_parquet('data.parquet')
+data = pd.read_parquet( args['datapath'] )
 xdata = data.iloc[:,1:]
 ydata = data.iloc[:,0]
 
@@ -68,7 +71,7 @@ xdata = pd.DataFrame( scaler.fit_transform(xdata), columns=cols, dtype=np.float3
 
 # Outdir
 run_id = args['ii']
-outdir = Path(args['gout'])/'out{}'.format(run_id)
+outdir = Path(args['gout'])/'run{}'.format(run_id)
 os.makedirs(outdir, exist_ok=True)
 
 # Model
